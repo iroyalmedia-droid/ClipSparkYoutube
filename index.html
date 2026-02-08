@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClipSpark | Auto YouTube Highlights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">CS</div>
+        <div>
+          <div class="brand-name">ClipSpark</div>
+          <div class="brand-tag">Auto highlights + subtitles</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#output">Outputs</a>
+        <a href="#features">Features</a>
+      </nav>
+      <button class="cta ghost">Start a project</button>
+    </header>
+
+    <main class="hero">
+      <section class="hero-copy">
+        <div class="eyebrow">YouTube in. Viral shorts out.</div>
+        <h1>
+          Turn long-form YouTube into
+          <span>vertical highlights</span>
+          with auto subtitles.
+        </h1>
+        <p>
+          ClipSpark detects peak moments, reframes 16:9 into 9:16, and burns in captions
+          ready for TikTok, YouTube Shorts, and Instagram Reels.
+        </p>
+        <div class="hero-actions">
+          <button id="generateBtn" class="primary">Generate highlights</button>
+          <button id="sampleBtn" class="ghost">Load sample</button>
+        </div>
+        <div class="hero-metrics">
+          <div class="metric">
+            <div class="metric-value">3</div>
+            <div class="metric-label">platform outputs</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">9:16</div>
+            <div class="metric-label">auto reframed</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">98%</div>
+            <div class="metric-label">caption accuracy</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="studio-card">
+        <div class="studio-header">
+          <div>
+            <h2>Highlight studio</h2>
+            <p>Paste a URL and pick your output pack.</p>
+          </div>
+          <span class="pill">Auto captions on</span>
+        </div>
+
+        <label class="field">
+          <span>YouTube URL</span>
+          <input id="urlInput" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" />
+        </label>
+
+        <div class="grid-two">
+          <label class="field">
+            <span>Goal</span>
+            <select id="goalSelect">
+              <option value="highlights">Viral highlights</option>
+              <option value="tutorial">Tutorial bites</option>
+              <option value="story">Story arc</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Clip length</span>
+            <select id="lengthSelect">
+              <option value="short">15-30 seconds</option>
+              <option value="medium">30-45 seconds</option>
+              <option value="long">45-60 seconds</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-two">
+          <label class="field">
+            <span>Caption language</span>
+            <select id="languageSelect">
+              <option value="auto">English (auto)</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Subtitle style</span>
+            <select id="subtitleStyle">
+              <option value="kinetic">Kinetic pop</option>
+              <option value="minimal">Minimal clean</option>
+              <option value="karaoke">Karaoke sweep</option>
+              <option value="bold">Bold block</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <label class="toggle">
+            <input id="burnInToggle" type="checkbox" checked />
+            Burn-in subtitles
+          </label>
+          <label class="toggle">
+            <input id="emojiToggle" type="checkbox" checked />
+            Smart emoji emphasis
+          </label>
+          <label class="toggle">
+            <input id="speakerToggle" type="checkbox" />
+            Speaker labels
+          </label>
+        </div>
+
+        <div class="platforms">
+          <span class="platform-label">Output pack</span>
+          <label class="chip">
+            <input type="checkbox" id="platformTikTok" checked />
+            TikTok
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="platformShorts" checked />
+            YouTube Shorts
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="platformReels" checked />
+            Instagram Reels
+          </label>
+        </div>
+
+        <div class="subtitle-preview style-kinetic" id="subtitlePreview">
+          <div class="preview-video">
+            <div class="preview-badge">Subtitle preview</div>
+            <div class="preview-captions">
+              <span>this moment right here</span>
+              <span>is the viral hook</span>
+            </div>
+          </div>
+          <div class="preview-notes">
+            <div class="preview-title">Auto highlights • 3 clips</div>
+            <div class="muted" id="previewNotes">Burn-in captions • Speaker labels off • Emoji emphasis on</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="pipeline" id="pipeline">
+      <div class="pipeline-title">
+        <div>
+          <h2>Automated pipeline</h2>
+          <p id="statusText" data-tone="idle">Waiting for a YouTube link.</p>
+        </div>
+        <div class="pill light" id="platformSummary">Outputs: TikTok, Shorts, Reels</div>
+      </div>
+
+      <div class="pipeline-steps">
+        <div class="pipeline-step" data-step="ingest">
+          <div class="step-index">01</div>
+          <div class="step-body">
+            <div class="step-title">Ingest + analyze</div>
+            <div class="step-desc">Pull chapters, audio peaks, and transcript cues.</div>
+          </div>
+          <div class="step-bar"><span></span></div>
+        </div>
+        <div class="pipeline-step" data-step="moments">
+          <div class="step-index">02</div>
+          <div class="step-body">
+            <div class="step-title">Detect highlights</div>
+            <div class="step-desc">Rank the most replayed moments for virality.</div>
+          </div>
+          <div class="step-bar"><span></span></div>
+        </div>
+        <div class="pipeline-step" data-step="reframe">
+          <div class="step-index">03</div>
+          <div class="step-body">
+            <div class="step-title">Reframe to 9:16</div>
+            <div class="step-desc">Auto-crop faces and action into vertical.</div>
+          </div>
+          <div class="step-bar"><span></span></div>
+        </div>
+        <div class="pipeline-step" data-step="captions">
+          <div class="step-index">04</div>
+          <div class="step-body">
+            <div class="step-title">Generate subtitles</div>
+            <div class="step-desc">Transcribe, stylize, and burn-in captions.</div>
+          </div>
+          <div class="step-bar"><span></span></div>
+        </div>
+        <div class="pipeline-step" data-step="exports">
+          <div class="step-index">05</div>
+          <div class="step-body">
+            <div class="step-title">Export packs</div>
+            <div class="step-desc">Deliver platform-ready MP4s and captions.</div>
+          </div>
+          <div class="step-bar"><span></span></div>
+        </div>
+      </div>
+
+      <div class="pipeline-footer">
+        <div class="signal">Resolution: 1080x1920 • Safe zones enabled • Caption pack included</div>
+        <button class="primary small" id="exportBtn">Export package</button>
+      </div>
+    </section>
+
+    <section class="output" id="output">
+      <div class="section-head">
+        <h2>Highlights ready to post</h2>
+        <p>Auto titles, subtitles, and dynamic hooks included.</p>
+      </div>
+      <div class="output-grid">
+        <article class="output-card" data-platform="tiktok">
+          <div class="output-frame">
+            <div class="frame-top">
+              <span class="platform-tag tiktok">TikTok</span>
+              <span class="duration" data-duration>0:22</span>
+            </div>
+            <div class="frame-center">
+              <div class="frame-spark"></div>
+              <div class="frame-wave"></div>
+            </div>
+            <div class="subtitle-lines style-kinetic">
+              <span>when the graph finally</span>
+              <span>turns green you ship</span>
+            </div>
+          </div>
+          <div class="output-meta">
+            <h3 class="output-title">Highlight #1 • Hook</h3>
+            <p class="output-desc">Auto-crop + caption emphasis ready.</p>
+          </div>
+        </article>
+
+        <article class="output-card" data-platform="shorts">
+          <div class="output-frame">
+            <div class="frame-top">
+              <span class="platform-tag shorts">Shorts</span>
+              <span class="duration" data-duration>0:28</span>
+            </div>
+            <div class="frame-center">
+              <div class="frame-spark"></div>
+              <div class="frame-wave"></div>
+            </div>
+            <div class="subtitle-lines style-kinetic">
+              <span>this is the 5-second</span>
+              <span>tip that changes it all</span>
+            </div>
+          </div>
+          <div class="output-meta">
+            <h3 class="output-title">Highlight #2 • Core tip</h3>
+            <p class="output-desc">Auto-zoom on speaker + subtitles.</p>
+          </div>
+        </article>
+
+        <article class="output-card" data-platform="reels">
+          <div class="output-frame">
+            <div class="frame-top">
+              <span class="platform-tag reels">Reels</span>
+              <span class="duration" data-duration>0:26</span>
+            </div>
+            <div class="frame-center">
+              <div class="frame-spark"></div>
+              <div class="frame-wave"></div>
+            </div>
+            <div class="subtitle-lines style-kinetic">
+              <span>the twist nobody</span>
+              <span>sees coming</span>
+            </div>
+          </div>
+          <div class="output-meta">
+            <h3 class="output-title">Highlight #3 • Payoff</h3>
+            <p class="output-desc">Beat-synced captions included.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="feature-grid" id="features">
+      <article class="feature-card">
+        <h3>Smart highlight selection</h3>
+        <p>Detects spikes in audience retention, emotional tone, and chapter markers.</p>
+      </article>
+      <article class="feature-card">
+        <h3>Subtitle personalization</h3>
+        <p>Pick kinetic, minimal, karaoke, or bold captions with auto-emoji emphasis.</p>
+      </article>
+      <article class="feature-card">
+        <h3>Export-ready packs</h3>
+        <p>Instant MP4 + caption files packaged for TikTok, Shorts, and Reels.</p>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <div>
+        <div class="brand-name">ClipSpark Studio</div>
+        <p>All processing happens automatically. Connect your rendering pipeline to go live.</p>
+      </div>
+      <button class="ghost">Schedule a demo</button>
+    </footer>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
