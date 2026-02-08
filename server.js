@@ -30,6 +30,9 @@ const jobs = new Map();
 const JOB_TTL_MS = 1000 * 60 * 60;
 const MAX_OPENAI_AUDIO_BYTES = 25 * 1024 * 1024;
 const OPENAI_TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+const DEFAULT_PLAYER_CLIENTS = ["ANDROID", "IOS", "TV"];
 
 const STYLE_MAP = {
   kinetic: "FontName=Arial,FontSize=58,PrimaryColour=&H00FFFFFF&,BackColour=&H90000000&,BorderStyle=3,Outline=2,Shadow=1,Alignment=2",
@@ -90,6 +93,43 @@ function buildVttTime(seconds) {
 
 function escapeFilterPath(filePath) {
   return filePath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
+}
+
+function buildYtdlOptions() {
+  const headers = {
+    "User-Agent": process.env.YTDL_USER_AGENT || DEFAULT_USER_AGENT,
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+
+  if (process.env.YTDL_COOKIE) {
+    headers.Cookie = process.env.YTDL_COOKIE;
+  }
+
+  const options = { requestOptions: { headers } };
+
+  const envClients = process.env.YTDL_PLAYER_CLIENTS;
+  if (envClients) {
+    const cleaned = envClients
+      .split(",")
+      .map((client) => client.trim().toUpperCase())
+      .filter(Boolean);
+    if (cleaned.length) {
+      options.playerClients = cleaned;
+    }
+  } else {
+    options.playerClients = DEFAULT_PLAYER_CLIENTS;
+  }
+
+  if (process.env.YTDL_COOKIES_JSON) {
+    try {
+      const cookies = JSON.parse(process.env.YTDL_COOKIES_JSON);
+      options.agent = ytdl.createAgent(cookies);
+    } catch (error) {
+      console.warn("Invalid YTDL_COOKIES_JSON. Falling back to header cookies.");
+    }
+  }
+
+  return options;
 }
 
 async function extractAudio(videoPath, audioPath) {
@@ -369,7 +409,8 @@ async function runJob(jobId, payload) {
   try {
     updateJob(jobId, { status: "processing", step: 0, message: "Downloading video...", progress: 0.1, jobDir });
 
-    const info = await ytdl.getInfo(payload.url);
+    const ytdlOptions = buildYtdlOptions();
+    const info = await ytdl.getInfo(payload.url, ytdlOptions);
     const videoTitle = sanitizeTitle(info.videoDetails?.title);
     const videoDuration = Number(info.videoDetails?.lengthSeconds || 0);
     const videoPath = path.join(jobDir, "source.mp4");
@@ -379,7 +420,7 @@ async function runJob(jobId, payload) {
       filter: (item) => item.hasAudio && item.hasVideo && item.container === "mp4",
     });
 
-    const downloadStream = ytdl.downloadFromInfo(info, { format });
+    const downloadStream = ytdl.downloadFromInfo(info, { format, ...ytdlOptions });
     await pipeline(downloadStream, fs.createWriteStream(videoPath));
 
     updateJob(jobId, { step: 1, message: "Fetching transcript...", progress: 0.2 });
@@ -456,10 +497,16 @@ async function runJob(jobId, payload) {
       outputZip: zipPath,
     });
   } catch (error) {
+    const rawMessage = error.message || "Unable to process video.";
+    const is403 = rawMessage.includes("Status code: 403");
+    const hint = is403
+      ? "YouTube blocked the server (403). Try another video, or set YTDL_COOKIE in Render."
+      : rawMessage;
+
     updateJob(jobId, {
       status: "error",
       message: "Processing failed.",
-      error: error.message || "Unable to process video.",
+      error: hint,
     });
   }
 }
